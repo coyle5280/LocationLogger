@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -24,6 +25,8 @@ public class LocationMain extends Activity {
     Button start;
     Button stop;
 
+    boolean gpsAvailable;
+
     double start_logitude;
     double start_latitude;
 
@@ -35,6 +38,7 @@ public class LocationMain extends Activity {
     double longitude,latitude;
 
     TextView textLocationView;
+    TextView battTextView;
 
     TextView distanceTextview;
 
@@ -54,6 +58,9 @@ public class LocationMain extends Activity {
 
     int batteryEndLevel;
     int batteryEndScale;
+
+
+
 
 
 
@@ -109,7 +116,7 @@ public class LocationMain extends Activity {
             case 3: stop_logitude = longitude;
                     stop_latitude = latitude;
                     locationManager.removeUpdates(locationListener);
-                    //calculate();
+                    calculate();
                     break;
         }
 
@@ -123,7 +130,7 @@ public class LocationMain extends Activity {
         location = new Location("distance");
 
         textLocationView = (TextView) findViewById(R.id.textLocation);
-
+        battTextView = (TextView) findViewById(R.id.battLevel);
         distanceTextview = (TextView) findViewById(R.id.distanceText);
 
         tracker = 1;
@@ -134,9 +141,11 @@ public class LocationMain extends Activity {
 
         batteryStatus = this.registerReceiver(null, intentFilter);
         int batteryStartLevel = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
-        int batteryStartScale = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+        int batteryStartScale = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
 
         batteryStartLevel = batteryStartLevel/batteryStartScale;
+
+        battTextView.setText(Float.toString(batteryStartLevel));
 
         start = (Button) findViewById(R.id.startButton);
         start.setOnClickListener(new View.OnClickListener() {
@@ -153,6 +162,8 @@ public class LocationMain extends Activity {
                 tracker = 3;
             }
         });
+
+
 
 
     }
@@ -173,11 +184,8 @@ public class LocationMain extends Activity {
             alertDialog.show();
         }
 
-        int distance = 0;
-
-        distance = Math.round(distanceArray[0]);
-        if(distance > 1) {
-            distanceTextview.setText(distance);
+        if(distanceArray[0] > 1) {
+            distanceTextview.setText(Float.toString(distanceArray[0]));
         }else
             distanceTextview.setText("Error You Did Not Travel Any Distance");
     }
