@@ -8,7 +8,7 @@ import java.net.URL;
 /**
  * Created by coyle on 10/3/2015.
  */
-public class httpHelper {
+public class HttpHelper {
 
     HttpURLConnection urlConnection;
 
@@ -16,7 +16,7 @@ public class httpHelper {
 
     String PARAMS;
 
-    public httpHelper(URL get_url ){
+    public HttpHelper(URL get_url ){
 
     }
 
