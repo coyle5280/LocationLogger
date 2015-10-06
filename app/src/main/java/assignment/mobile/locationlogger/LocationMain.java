@@ -13,9 +13,12 @@ import android.location.LocationManager;
 import android.os.BatteryManager;
 import android.os.Bundle;
 import android.text.method.ScrollingMovementMethod;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+
+import java.util.ArrayList;
 
 /**
  * Created by godzilla on 9/30/2015.
@@ -36,15 +39,13 @@ public class LocationMain extends Activity {
     int tracker;
 
     double longitude,latitude;
-
+    //TextView Objects
     TextView textLocationView;
     TextView battTextView;
-
     TextView distanceTextview;
-
+    //Location Objects
     LocationManager locationManager;
     LocationListener locationListener;
-
     Location location;
 
     float[] distanceArray;
@@ -59,8 +60,7 @@ public class LocationMain extends Activity {
     int batteryEndLevel;
     int batteryEndScale;
 
-
-
+    ArrayList<Location> locationList;
 
 
 
@@ -78,6 +78,7 @@ public class LocationMain extends Activity {
         locationListener = new LocationListener() {
             @Override
             public void onLocationChanged(Location location) {
+                locationList.add(location);
                 updateLocationInfo(location);
             }
 
@@ -140,18 +141,15 @@ public class LocationMain extends Activity {
         textLocationView.setMovementMethod(new ScrollingMovementMethod());
 
         batteryStatus = this.registerReceiver(null, intentFilter);
-        int batteryStartLevel = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
-        int batteryStartScale = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
 
-        batteryStartLevel = batteryStartLevel/batteryStartScale;
-
-        battTextView.setText(Float.toString(batteryStartLevel));
+        locationList = new ArrayList();
 
         start = (Button) findViewById(R.id.startButton);
         start.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,2000, 0, locationListener);
+                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,5000,0,locationListener);
+                battTextView.setText(Float.toString(getBatteryLevel()));
             }
         });
 
@@ -160,12 +158,22 @@ public class LocationMain extends Activity {
             @Override
             public void onClick(View v) {
                 tracker = 3;
+                battTextView.append(Float.toString(getBatteryLevel()));
             }
         });
 
 
 
 
+    }
+
+    private float getBatteryLevel (){
+        int batteryStartLevelInt = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+        Log.i("batStartLevelInt", Integer.toString(batteryStartLevelInt));
+        int batteryStartScaleInt = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+        Log.i("batStartScaleInt", Integer.toString(batteryStartScaleInt));
+        batteryStartLevel = batteryStartLevelInt/batteryStartScaleInt;
+        return  batteryStartLevel;
     }
 
     private void calculate(){
