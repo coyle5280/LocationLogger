@@ -1,7 +1,11 @@
 package assignment.mobile.locationlogger;
 
+import android.app.ActionBar;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.DownloadManager;
+import android.app.FragmentManager;
+import android.app.FragmentTransaction;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -14,9 +18,19 @@ import android.os.BatteryManager;
 import android.os.Bundle;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
 
 import java.util.ArrayList;
 
@@ -25,52 +39,58 @@ import java.util.ArrayList;
  */
 public class LocationMain extends Activity {
 
-    Button start;
-    Button stop;
+    private boolean gpsAvailable;
 
-    boolean gpsAvailable;
+    private double start_logitude;
+    private double start_latitude;
 
-    double start_logitude;
-    double start_latitude;
+    private double stop_logitude;
+    private double stop_latitude;
 
-    double stop_logitude;
-    double stop_latitude;
+    private int tracker;
 
-    int tracker;
+    private RequestQueue queue;
 
-    double longitude,latitude;
+
     //TextView Objects
-    TextView textLocationView;
-    TextView battTextView;
-    TextView distanceTextview;
+    private TextView textLocationView;
+    private TextView battTextView;
+    private TextView distanceTextview;
     //Location Objects
-    LocationManager locationManager;
-    LocationListener locationListener;
-    Location location;
+    private LocationManager locationManager;
+    private LocationListener locationListener;
+    private Location location;
 
-    float[] distanceArray;
-
-    IntentFilter intentFilter;
-    Intent batteryStatus;
+    private float[] distanceArray;
 
 
-    float batteryStartLevel;
+    private Intent batteryStatus;
+
+    //  Menu
+    ActionBar actionBar;
+    //  Menu
+    private boolean settingsBoolean = false;
+
+    SettingsFragment settings;
 
 
-    int batteryEndLevel;
-    int batteryEndScale;
 
-    ArrayList<Location> locationList;
+    private ArrayList locationList;
 
-
+    private float continuousDistance = -1.0f;
+    private Location previousLocation;
 
     @Override
     public void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
+        actionBar = getActionBar();
+
         setContentView(R.layout.main);
         setupItems();
         setupLocation();
     }
+
+
 
     private void setupLocation() {
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
@@ -78,8 +98,16 @@ public class LocationMain extends Activity {
         locationListener = new LocationListener() {
             @Override
             public void onLocationChanged(Location location) {
-                locationList.add(location);
-                updateLocationInfo(location);
+                if(location.getAccuracy() < 10) {
+                    //add location to location Array list
+                    locationList.add(location);
+                    //call method to calculate continuous distance
+                    calculateContinuous(location);
+                    //calculate straight line distance from start to stop
+                    updateLocationInfo(location);
+
+                    sendLocationInfoGet(location);
+                }
             }
 
             @Override
@@ -99,8 +127,17 @@ public class LocationMain extends Activity {
         };
     }
 
-    private void updateLocationInfo(Location location) {
+    private void calculateContinuous(Location location) {
+        if(continuousDistance == -1.0f){
+            previousLocation = location;
+            continuousDistance = 0.0f;
+        }else{
+            continuousDistance = previousLocation.distanceTo(location);
+        }
+    }
 
+    private void updateLocationInfo(Location location) {
+        double longitude,latitude;
         latitude = location.getLatitude();
         longitude = location.getLongitude();
 
@@ -124,7 +161,8 @@ public class LocationMain extends Activity {
     }
 
     private void setupItems() {
-
+        IntentFilter intentFilter;
+        queue = Volley.newRequestQueue(this);
 
         intentFilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
 
@@ -135,7 +173,9 @@ public class LocationMain extends Activity {
         distanceTextview = (TextView) findViewById(R.id.distanceText);
 
         tracker = 1;
-
+        // Menu
+        settings = new SettingsFragment();
+        //Menu
         distanceArray = new float[5];
 
         textLocationView.setMovementMethod(new ScrollingMovementMethod());
@@ -143,37 +183,87 @@ public class LocationMain extends Activity {
         batteryStatus = this.registerReceiver(null, intentFilter);
 
         locationList = new ArrayList();
+        final Button stop = (Button) findViewById(R.id.stopButton);
+        final Button start = (Button) findViewById(R.id.startButton);
 
-        start = (Button) findViewById(R.id.startButton);
         start.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,5000,0,locationListener);
-                battTextView.setText(Float.toString(getBatteryLevel()));
+                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000, 0, locationListener);
+                textLocationView.setText("");
+                battTextView.setText("Start Batt Level: " + Float.toString(getBatteryLevel()) + "/n");
+                stop.setVisibility(View.VISIBLE);
+                start.setVisibility(View.INVISIBLE);
+
+
             }
         });
 
-        stop = (Button) findViewById(R.id.stopButton);
+
         stop.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 tracker = 3;
-                battTextView.append(Float.toString(getBatteryLevel()));
+                battTextView.append("End Batt Level: " + Float.toString(getBatteryLevel()));
+                start.setVisibility(View.VISIBLE);
+                stop.setVisibility(View.INVISIBLE);
             }
         });
+    }
+    //Menu
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.main_menu, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+    //Menu
+
+    public boolean onOptionsItemSelected(MenuItem item){
+        switch (item.getItemId()) {
+            case R.id.settings:
+                callSettings();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
 
 
+        }
 
+    }
+        //Lon then Lat
 
+    private void sendLocationInfoGet(Location location) {
+
+        String url = "https://coyle5280.cartodb.com/api/v2/sql?q=INSERT INTO " +
+                "MobileLocation (the_geom, observation)" +
+                " VALUES (ST_GeomFromText(’POINT(" + location.getLongitude() + " " + location.getLatitude() + ")’, 4326),'Location')" +
+                "&api_key=baba08a4c371dc7ed93027f141d0f425c4606c45";
+
+        StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        // Log response
+                        Log.i("response get", response);
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.e("response get", error.toString());
+            }
+        });
+        queue.add(stringRequest);
     }
 
     private float getBatteryLevel (){
+        float batteryLevel;
         int batteryStartLevelInt = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
         Log.i("batStartLevelInt", Integer.toString(batteryStartLevelInt));
         int batteryStartScaleInt = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
         Log.i("batStartScaleInt", Integer.toString(batteryStartScaleInt));
-        batteryStartLevel = batteryStartLevelInt/batteryStartScaleInt;
-        return  batteryStartLevel;
+        batteryLevel = batteryStartLevelInt/(float) batteryStartScaleInt;
+        return  batteryLevel;
     }
 
     private void calculate(){
@@ -196,5 +286,21 @@ public class LocationMain extends Activity {
             distanceTextview.setText(Float.toString(distanceArray[0]));
         }else
             distanceTextview.setText("Error You Did Not Travel Any Distance");
+    }
+
+    private void callSettings() {
+        if(!settingsBoolean) {
+            FragmentManager fragmentManager = getFragmentManager();
+            FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+            fragmentTransaction.add(R.id.root, settings);
+            fragmentTransaction.commit();
+            settingsBoolean = true;
+        }else{
+            FragmentManager fragmentManager = getFragmentManager();
+            FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+            fragmentTransaction.remove(settings);
+            fragmentTransaction.commit();
+            settingsBoolean = false;
+        }
     }
 }

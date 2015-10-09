@@ -7,4 +7,7 @@
     <string name="settings">Settings</string>
     <string name="distance">Distance</string>
     <string name="batteryLevel">Battery Level</string>
+    <string name="setbackground">Set Background Color</string>
+    <string name="setText">Set Text Color</string>
+
 </resources>
