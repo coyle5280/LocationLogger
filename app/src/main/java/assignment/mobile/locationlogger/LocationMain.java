@@ -22,9 +22,13 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
@@ -32,7 +36,28 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
+import com.squareup.okhttp.OkHttpClient;
+import com.squareup.okhttp.Request.*;
+import com.*;
+
+
+
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.Console;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.TimeZone;
+
 
 /**
  * Created by godzilla on 9/30/2015.
@@ -47,10 +72,13 @@ public class LocationMain extends Activity {
     private double stop_logitude;
     private double stop_latitude;
 
+    private WebView mWebView ;
+
     private int tracker;
 
     private RequestQueue queue;
 
+    private String observation;
 
     //TextView Objects
     private TextView textLocationView;
@@ -172,6 +200,8 @@ public class LocationMain extends Activity {
         battTextView = (TextView) findViewById(R.id.battLevel);
         distanceTextview = (TextView) findViewById(R.id.distanceText);
 
+        observation = "location2";
+
         tracker = 1;
         // Menu
         settings = new SettingsFragment();
@@ -231,29 +261,83 @@ public class LocationMain extends Activity {
         }
 
     }
+
+    private String getCurrentTime(){
+        String isoTime;
+        TimeZone tz = TimeZone.getTimeZone("America/Denver");
+        DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+        df.setTimeZone(tz);
+        isoTime = df.format(new Date());
+        return isoTime;
+    }
+
+    private void setObservation(String setObservation){
+        observation = setObservation;
+    }
         //Lon then Lat
+
 
     private void sendLocationInfoGet(Location location) {
 
-        String url = "https://coyle5280.cartodb.com/api/v2/sql?q=INSERT INTO " +
-                "MobileLocation (the_geom, observation)" +
-                " VALUES (ST_GeomFromText(’POINT(" + location.getLongitude() + " " + location.getLatitude() + ")’, 4326),'Location')" +
-                "&api_key=baba08a4c371dc7ed93027f141d0f425c4606c45";
+        mWebView  = new WebView(this);
+        // Enable javascript
+        mWebView.getSettings().setJavaScriptEnabled(true);
+        // Impersonate Mozzila browser
+        mWebView.getSettings().setUserAgentString("Mozilla/5.0 (Windows NT 6.2; Win64; x64; rv:21.0.0) Gecko/20121011 Firefox/21.0.0");
+        final Activity activity = this;
 
-        StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
-                new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String response) {
-                        // Log response
-                        Log.i("response get", response);
-                    }
-                }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                Log.e("response get", error.toString());
+        mWebView.setWebViewClient(new WebViewClient() {
+            public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
+                Toast.makeText(activity, description, Toast.LENGTH_SHORT).show();
             }
         });
-        queue.add(stringRequest);
+
+
+        String url = "http://coyle5280.cartodb.com/api/v2/sql?q=INSERT INTO " +
+                "mobile_data(the_geom, observation, timestamp)" +
+                " VALUES (ST_GeomFromText('POINT(" + location.getLongitude() + " " + location.getLatitude() + ")', 4326),' " + observation + " ','" + getCurrentTime() + "')" +
+                "&api_key=baba08a4c371dc7ed93027f141d0f425c4606c45";
+
+
+
+        mWebView.loadUrl(url);
+
+        Log.i("another Try", url);
+//        StringRequest stringRequest = new StringRequest(url,
+//                new Response.Listener<String>() {
+//                    @Override
+//                    public void onResponse(String response) {
+//                        // Log response
+//                        Log.i("response Success", response);
+//                    }
+//                }, new Response.ErrorListener() {
+//            @Override
+//            public void onErrorResponse(VolleyError error) {
+//                Log.e("response get", error.getMessage(), error);
+//            }
+//        });
+//        {
+//            @Override
+//            public Map<String, String> getHeaders() throws AuthFailureError {
+//                Map<String, String>  params = new HashMap<String, String>();
+//                params.put("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
+//                params.put("Accept-Encoding", "gzip, deflate, sdch");
+//                params.put("Accept-Language", "en-US,en;q=0.8");
+//                params.put("Cache-Control", "max-age=0");
+//                params.put("Connection", "keep-alive");
+//                params.put("Accept-Encoding", "gzip, deflate, sdch");
+//                params.put("Host", "coyle5280.cartodb.com");
+//                params.put("Remote Address", "coyle5280.cartodb.com");
+//                return params;
+//            }
+//        };
+//        queue.add(stringRequest);
+
+
+
+
+
+
     }
 
     private float getBatteryLevel (){
@@ -303,4 +387,6 @@ public class LocationMain extends Activity {
             settingsBoolean = false;
         }
     }
+
+
 }
