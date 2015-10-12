@@ -2,65 +2,99 @@
 <!--
 Menu Fragment XML Layout File
 -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical" android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:layout_gravity="center"
-    android:background="@android:color/black"
-    android:weightSum="1">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/setbackground"
-        android:layout_marginTop="50dp"
-        android:layout_gravity="center" />
+<RelativeLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:orientation="vertical"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_gravity="end"
+        android:clickable="true"
+        android:background="@android:color/black"
+    >
+        <!--android:background="@android:color/black"--><![CDATA[
+    >
 
-    <CheckBox
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/checkboxBackground"
-        android:layout_gravity="center_horizontal"
-        android:checked="false" />
+    ]]>
 
-    <Button
-        style="?android:attr/buttonStyleSmall"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text=""
-        android:id="@+id/fragBackGroundButton"
-        android:layout_gravity="center_horizontal"
+    <Spinner
+        android:layout_width="150dp"
+        android:layout_height="45dp"
+        android:id="@+id/spinnerFrequency"
+        android:spinnerMode="dropdown"
+        android:textAlignment="center"
+        android:transitionGroup="false"
+        android:layout_below="@+id/textView3"
+        android:layout_alignStart="@+id/textView3"
+        android:layout_marginTop="25dp" />
+
+    <Spinner
+        android:layout_width="150dp"
+        android:layout_height="45dp"
+        android:id="@+id/spinnerDistance"
+        android:spinnerMode="dropdown"
+        android:layout_below="@+id/textView2"
+        android:layout_alignStart="@+id/textView2"
         android:layout_marginTop="25dp" />
 
     <TextView
-        android:layout_width="97dp"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/fragColorText"
-        android:layout_gravity="center_horizontal"
-        android:layout_weight="0.10"
-        android:layout_marginTop="10dp" />
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:text="@string/setName"
+        android:id="@+id/textView"
+        android:layout_marginLeft="15dp"
+        android:layout_below="@+id/spinnerFrequency"
+        android:layout_alignParentStart="true"
+        android:layout_marginTop="33dp" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/setText"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginTop="10dp"
-        android:id="@+id/textView" />
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:text="@string/setLocationDistance"
+        android:id="@+id/textView2"
+        android:layout_marginRight="15dp"
+        android:layout_marginTop="29dp"
+        android:layout_alignParentTop="true"
+        android:layout_alignStart="@+id/textView" />
 
-    <CheckBox
+    <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/checkboxText"
-        android:layout_gravity="center_horizontal"
-        android:checked="false" />
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:text="@string/setLocationFrequency"
+        android:id="@+id/textView3"
+        android:layout_below="@+id/spinnerDistance"
+        android:layout_alignStart="@+id/spinnerDistance"
+        android:layout_marginTop="28dp" />
 
-    <Button
+    <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text=""
-        android:id="@+id/saveButton"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginTop="75dp" />
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:text="@string/setObservation"
+        android:id="@+id/textView4"
+        android:layout_above="@+id/editTextObservation"
+        android:layout_alignStart="@+id/editTextObservation" />
 
-</LinearLayout>
+    <EditText
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/editTextObservation"
+        android:hint="@string/hintObservationEditText"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="74dp"
+        android:layout_alignStart="@+id/textView" />
+
+    <EditText
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/editTextName"
+        android:hint="@string/hintNameEditText"
+        android:layout_below="@+id/textView"
+        android:layout_alignStart="@+id/textView"
+        android:layout_alignEnd="@+id/editTextObservation"
+        android:scrollIndicators="end" />
+
+</RelativeLayout>

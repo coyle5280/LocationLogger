@@ -14,6 +14,7 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.AsyncTask;
 import android.os.BatteryManager;
 import android.os.Bundle;
 import android.text.method.ScrollingMovementMethod;
@@ -36,20 +37,11 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
-import com.squareup.okhttp.OkHttpClient;
-import com.squareup.okhttp.Request.*;
-import com.*;
 
 
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.Console;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
+
+
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -66,17 +58,9 @@ public class LocationMain extends Activity {
 
     private boolean gpsAvailable;
 
-    private double start_logitude;
-    private double start_latitude;
 
-    private double stop_logitude;
-    private double stop_latitude;
 
-    private WebView mWebView ;
-
-    private int tracker;
-
-    private RequestQueue queue;
+//    private RequestQueue queue;
 
     private String observation;
 
@@ -91,6 +75,10 @@ public class LocationMain extends Activity {
 
     private float[] distanceArray;
 
+    String name;
+    private int updateLocationTimer;
+    private int updateLocationDistance;
+    private int locationAccuracySetting;
 
     private Intent batteryStatus;
 
@@ -98,12 +86,17 @@ public class LocationMain extends Activity {
     ActionBar actionBar;
     //  Menu
     private boolean settingsBoolean = false;
+    private boolean mapBoolean = false;
 
     SettingsFragment settings;
 
+    MapView map;
 
+    ArrayList<String> failedHttpCallUrls;
 
     private ArrayList locationList;
+
+    private WebView mWebView;
 
     private float continuousDistance = -1.0f;
     private Location previousLocation;
@@ -126,7 +119,7 @@ public class LocationMain extends Activity {
         locationListener = new LocationListener() {
             @Override
             public void onLocationChanged(Location location) {
-                if(location.getAccuracy() < 10) {
+                if(location.getAccuracy() < locationAccuracySetting) {
                     //add location to location Array list
                     locationList.add(location);
                     //call method to calculate continuous distance
@@ -160,68 +153,81 @@ public class LocationMain extends Activity {
             previousLocation = location;
             continuousDistance = 0.0f;
         }else{
-            continuousDistance = previousLocation.distanceTo(location);
+            continuousDistance += previousLocation.distanceTo(location);
         }
     }
 
     private void updateLocationInfo(Location location) {
-        double longitude,latitude;
-        latitude = location.getLatitude();
-        longitude = location.getLongitude();
-
-        switch(tracker){
-            case 1: start_logitude = longitude;
-                    start_latitude = latitude;
-                    textLocationView.append("Lat: " + latitude + "  Lon: " + longitude + "\n");
-                    textLocationView.append("\n");
-                    tracker = 2;
-                    break;
-            case 2: textLocationView.append("Lat: " + latitude + "  Lon: " + longitude + "\n");
-                    textLocationView.append("\n");
-                    break;
-            case 3: stop_logitude = longitude;
-                    stop_latitude = latitude;
-                    locationManager.removeUpdates(locationListener);
-                    calculate();
-                    break;
+        textLocationView.append("Lat: " + location.getLatitude() + "  Lon: " + location.getLongitude() + "\n");
+        textLocationView.append("\n");
         }
 
-    }
-
     private void setupItems() {
-        IntentFilter intentFilter;
-        queue = Volley.newRequestQueue(this);
+//        queue = Volley.newRequestQueue(this);
 
-        intentFilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+        mWebView = new WebView(this);
+        mWebView.getSettings().setUserAgentString("Mozilla/5.0 (Windows NT 6.2; Win64; x64; rv:21.0.0) Gecko/20121011 Firefox/21.0.0");
+        final Activity activity = this;
+
+        mWebView.setWebViewClient(new WebViewClient() {
+            public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
+//              Toast.makeText(activity, description, Toast.LENGTH_SHORT).show();
+                failedHttpCallUrls.add(failingUrl);
+            }
+        });
+
+        failedHttpCallUrls = new ArrayList<>();
 
         location = new Location("distance");
 
+        //Connect XML UI Items
         textLocationView = (TextView) findViewById(R.id.textLocation);
+        textLocationView.setMovementMethod(new ScrollingMovementMethod());
+
         battTextView = (TextView) findViewById(R.id.battLevel);
         distanceTextview = (TextView) findViewById(R.id.distanceText);
+        final Button stop = (Button) findViewById(R.id.stopButton);
+        final Button start = (Button) findViewById(R.id.startButton);
 
+        //data for database
         observation = "location2";
+        name = "josh";
 
-        tracker = 1;
+        //Location update settings
+        updateLocationDistance = 0;
+        updateLocationTimer = 30000;
+        locationAccuracySetting = 10;
+
+
+
+
         // Menu
         settings = new SettingsFragment();
+
+        map = new MapView();
         //Menu
         distanceArray = new float[5];
 
-        textLocationView.setMovementMethod(new ScrollingMovementMethod());
 
+
+
+        //Batt Level listener
+        final IntentFilter intentFilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
         batteryStatus = this.registerReceiver(null, intentFilter);
-
+        //Array List to Hold location objects
         locationList = new ArrayList();
-        final Button stop = (Button) findViewById(R.id.stopButton);
-        final Button start = (Button) findViewById(R.id.startButton);
+
+
 
         start.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000, 0, locationListener);
+                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, updateLocationTimer, updateLocationDistance, locationListener);
+                //Clear Out Previous Info
                 textLocationView.setText("");
-                battTextView.setText("Start Batt Level: " + Float.toString(getBatteryLevel()) + "/n");
+                distanceTextview.setText("");
+                battTextView.setText("");
+                battTextView.setText("Start Battery Level: " + Float.toString(getBatteryLevel()) + "\n");
                 stop.setVisibility(View.VISIBLE);
                 start.setVisibility(View.INVISIBLE);
 
@@ -233,13 +239,29 @@ public class LocationMain extends Activity {
         stop.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                tracker = 3;
-                battTextView.append("End Batt Level: " + Float.toString(getBatteryLevel()));
+                calculateStartEnd();
                 start.setVisibility(View.VISIBLE);
                 stop.setVisibility(View.INVISIBLE);
+                locationManager.removeUpdates(locationListener);
+                tryFailedUrls();
+                displayResults();
             }
         });
     }
+
+    private void tryFailedUrls() {
+        String url = "";
+        int count = 0;
+        if(failedHttpCallUrls.size() != 0) {
+            do {
+                url = failedHttpCallUrls.get(0);
+                failedHttpCallUrls.remove(0);
+                mWebView.loadUrl(url);
+                count++;
+            } while (failedHttpCallUrls.size() != 0 && count < 75);
+        }
+    }
+
     //Menu
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -254,12 +276,31 @@ public class LocationMain extends Activity {
             case R.id.settings:
                 callSettings();
                 return true;
+            case R.id.map:
+                callMap();
+                return true;
             default:
                 return super.onOptionsItemSelected(item);
 
 
         }
 
+    }
+
+    private void callMap() {
+        if(!mapBoolean) {
+            FragmentManager fragmentManager = getFragmentManager();
+            FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+            fragmentTransaction.replace(R.id.root, map);
+            fragmentTransaction.commit();
+            mapBoolean = true;
+        }else{
+            FragmentManager fragmentManager = getFragmentManager();
+            FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+            fragmentTransaction.remove(map);
+            fragmentTransaction.commit();
+            mapBoolean = false;
+        }
     }
 
     private String getCurrentTime(){
@@ -271,31 +312,38 @@ public class LocationMain extends Activity {
         return isoTime;
     }
 
-    private void setObservation(String setObservation){
+    //Change Settings Methods
+    private void changeTheObservation(String setObservation){
         observation = setObservation;
     }
-        //Lon then Lat
 
+    private void changeTheName(String setName){
+        name = setName;
+    }
+
+    private void changeTimerFrequency(int setTimerFrequency){
+        updateLocationTimer = setTimerFrequency;
+    }
+
+    private void changeLocationDistanceUpdate(int setDistance){
+        updateLocationDistance = setDistance;
+    }
+    //End Change Settings Methods
 
     private void sendLocationInfoGet(Location location) {
 
-        mWebView  = new WebView(this);
+
         // Enable javascript
-        mWebView.getSettings().setJavaScriptEnabled(true);
+//        mWebView.getSettings().setJavaScriptEnabled(true);
         // Impersonate Mozzila browser
-        mWebView.getSettings().setUserAgentString("Mozilla/5.0 (Windows NT 6.2; Win64; x64; rv:21.0.0) Gecko/20121011 Firefox/21.0.0");
-        final Activity activity = this;
-
-        mWebView.setWebViewClient(new WebViewClient() {
-            public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
-                Toast.makeText(activity, description, Toast.LENGTH_SHORT).show();
-            }
-        });
 
 
+        //Lon then Lat
         String url = "http://coyle5280.cartodb.com/api/v2/sql?q=INSERT INTO " +
-                "mobile_data(the_geom, observation, timestamp)" +
-                " VALUES (ST_GeomFromText('POINT(" + location.getLongitude() + " " + location.getLatitude() + ")', 4326),' " + observation + " ','" + getCurrentTime() + "')" +
+                "mobile_data(the_geom, observation, timestamp, name, battery_level)" +
+                " VALUES (ST_GeomFromText('POINT(" + location.getLongitude() + " " +
+                location.getLatitude() + ")', 4326),' " + observation + " ','" +
+                getCurrentTime() + "','" + name + "','" + getBatteryLevel() + "')" +
                 "&api_key=baba08a4c371dc7ed93027f141d0f425c4606c45";
 
 
@@ -350,33 +398,38 @@ public class LocationMain extends Activity {
         return  batteryLevel;
     }
 
-    private void calculate(){
-        try {
-            location.distanceBetween(start_latitude, start_logitude, stop_latitude, stop_logitude, distanceArray);
-        }catch(IllegalArgumentException	e){
-            AlertDialog alertDialog = new AlertDialog.Builder(this).create();
-            alertDialog.setTitle("Error");
-            alertDialog.setMessage("Error " + e.toString());
-            alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK",
-                    new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int which) {
-                            dialog.dismiss();
-                        }
-                    });
-            alertDialog.show();
-        }
+    private void calculateStartEnd() {
+        if (locationList.size() > 1) {
+            int lastEntryIndex = (locationList.size() - 1);
+            Location start_Location = (Location) locationList.get(0);
+            Location stop_Location = (Location) locationList.get(lastEntryIndex);
+            try {
+                location.distanceBetween(start_Location.getLatitude(),start_Location.getLongitude(),
+                        stop_Location.getLatitude(), stop_Location.getLongitude(), distanceArray);
+            } catch (IllegalArgumentException e) {
+                AlertDialog alertDialog = new AlertDialog.Builder(this).create();
+                alertDialog.setTitle("Error");
+                alertDialog.setMessage("Error " + e.toString());
+                alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK",
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int which) {
+                                dialog.dismiss();
+                            }
+                        });
+                alertDialog.show();
+            }
 
-        if(distanceArray[0] > 1) {
-            distanceTextview.setText(Float.toString(distanceArray[0]));
-        }else
-            distanceTextview.setText("Error You Did Not Travel Any Distance");
+
+        }else{
+            distanceTextview.setText("Error You Do Not Have Enough Locations");
+        }
     }
 
     private void callSettings() {
         if(!settingsBoolean) {
             FragmentManager fragmentManager = getFragmentManager();
             FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-            fragmentTransaction.add(R.id.root, settings);
+            fragmentTransaction.replace(R.id.root, settings);
             fragmentTransaction.commit();
             settingsBoolean = true;
         }else{
@@ -387,6 +440,23 @@ public class LocationMain extends Activity {
             settingsBoolean = false;
         }
     }
+
+    private void displayResults(){
+
+        //Battery Level At End
+        battTextView.append("End Battery Level: " + Float.toString(getBatteryLevel()));
+
+
+        //Display Straight Line Distance
+        if (distanceArray[0] > 1 && continuousDistance != -1.0f) {
+            distanceTextview.setText("Start/End Distance: " +
+                    Float.toString(distanceArray[0]) + "\n");
+            distanceTextview.append("Continuous Distance: " + Float.toString(continuousDistance));
+        } else {
+            distanceTextview.setText("Error You Did Not Travel Any Distance");
+        }
+    }
+
 
 
 }
