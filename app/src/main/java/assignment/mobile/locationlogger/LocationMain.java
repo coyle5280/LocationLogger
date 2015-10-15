@@ -112,7 +112,9 @@ public class LocationMain extends Activity {
     }
 
 
-
+    /**
+     *
+     */
     private void setupLocation() {
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
 
@@ -154,6 +156,7 @@ public class LocationMain extends Activity {
             continuousDistance = 0.0f;
         }else{
             continuousDistance += previousLocation.distanceTo(location);
+            previousLocation = location;
         }
     }
 
@@ -168,7 +171,6 @@ public class LocationMain extends Activity {
         mWebView = new WebView(this);
         mWebView.getSettings().setUserAgentString("Mozilla/5.0 (Windows NT 6.2; Win64; x64; rv:21.0.0) Gecko/20121011 Firefox/21.0.0");
         final Activity activity = this;
-
         mWebView.setWebViewClient(new WebViewClient() {
             public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
 //              Toast.makeText(activity, description, Toast.LENGTH_SHORT).show();
@@ -177,7 +179,7 @@ public class LocationMain extends Activity {
         });
 
         failedHttpCallUrls = new ArrayList<>();
-
+        //location Listener
         location = new Location("distance");
 
         //Connect XML UI Items
@@ -195,7 +197,7 @@ public class LocationMain extends Activity {
 
         //Location update settings
         updateLocationDistance = 0;
-        updateLocationTimer = 30000;
+        updateLocationTimer = 0;
         locationAccuracySetting = 10;
 
 
@@ -203,23 +205,27 @@ public class LocationMain extends Activity {
 
         // Menu
         settings = new SettingsFragment();
-
         map = new MapView();
         //Menu
+
+
         distanceArray = new float[5];
 
 
 
 
         //Batt Level listener
-        final IntentFilter intentFilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-        batteryStatus = this.registerReceiver(null, intentFilter);
+
         //Array List to Hold location objects
         locationList = new ArrayList();
 
 
 
         start.setOnClickListener(new View.OnClickListener() {
+            /**
+             * onClick Listener for Start Button
+             * @param v
+             */
             @Override
             public void onClick(View v) {
                 locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, updateLocationTimer, updateLocationDistance, locationListener);
@@ -237,6 +243,10 @@ public class LocationMain extends Activity {
 
 
         stop.setOnClickListener(new View.OnClickListener() {
+            /**
+             * onClick Listener for Stop Button
+             * @param v
+             */
             @Override
             public void onClick(View v) {
                 calculateStartEnd();
@@ -249,6 +259,9 @@ public class LocationMain extends Activity {
         });
     }
 
+    /**
+     *
+     */
     private void tryFailedUrls() {
         String url = "";
         int count = 0;
@@ -263,6 +276,12 @@ public class LocationMain extends Activity {
     }
 
     //Menu
+
+    /**
+     *
+     * @param menu
+     * @return
+     */
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
@@ -277,7 +296,7 @@ public class LocationMain extends Activity {
                 callSettings();
                 return true;
             case R.id.map:
-                callMap();
+                switchToMapView();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -287,7 +306,11 @@ public class LocationMain extends Activity {
 
     }
 
-    private void callMap() {
+
+    /**
+     *
+     */
+    private void switchToMapView() {
         if(!mapBoolean) {
             FragmentManager fragmentManager = getFragmentManager();
             FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
@@ -303,6 +326,10 @@ public class LocationMain extends Activity {
         }
     }
 
+    /**
+     *
+     * @return
+     */
     private String getCurrentTime(){
         String isoTime;
         TimeZone tz = TimeZone.getTimeZone("America/Denver");
@@ -313,23 +340,20 @@ public class LocationMain extends Activity {
     }
 
     //Change Settings Methods
-    private void changeTheObservation(String setObservation){
-        observation = setObservation;
+    private void updateSettings(SettingsObject newSettings){
+        observation = newSettings.getObservation();
+        name = newSettings.getName();
+        updateLocationTimer = newSettings.getTimerFrequencyVariable();
+        updateLocationDistance = newSettings.getDistanceUpdateVariable();
+
     }
 
-    private void changeTheName(String setName){
-        name = setName;
-    }
-
-    private void changeTimerFrequency(int setTimerFrequency){
-        updateLocationTimer = setTimerFrequency;
-    }
-
-    private void changeLocationDistanceUpdate(int setDistance){
-        updateLocationDistance = setDistance;
-    }
     //End Change Settings Methods
 
+    /**
+     *
+     * @param location
+     */
     private void sendLocationInfoGet(Location location) {
 
 
@@ -388,16 +412,25 @@ public class LocationMain extends Activity {
 
     }
 
+    /**
+     *
+     * @return
+     */
     private float getBatteryLevel (){
         float batteryLevel;
+        IntentFilter intentFilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+        batteryStatus = this.registerReceiver(null, intentFilter);
         int batteryStartLevelInt = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
-        Log.i("batStartLevelInt", Integer.toString(batteryStartLevelInt));
+//        Log.i("batStartLevelInt", Integer.toString(batteryStartLevelInt));
         int batteryStartScaleInt = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
-        Log.i("batStartScaleInt", Integer.toString(batteryStartScaleInt));
+//        Log.i("batStartScaleInt", Integer.toString(batteryStartScaleInt));
         batteryLevel = batteryStartLevelInt/(float) batteryStartScaleInt;
         return  batteryLevel;
     }
 
+    /**
+     *
+     */
     private void calculateStartEnd() {
         if (locationList.size() > 1) {
             int lastEntryIndex = (locationList.size() - 1);
@@ -425,6 +458,9 @@ public class LocationMain extends Activity {
         }
     }
 
+    /**
+     *
+     */
     private void callSettings() {
         if(!settingsBoolean) {
             FragmentManager fragmentManager = getFragmentManager();
@@ -441,6 +477,9 @@ public class LocationMain extends Activity {
         }
     }
 
+    /**
+     *
+     */
     private void displayResults(){
 
         //Battery Level At End

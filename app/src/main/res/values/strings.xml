@@ -16,4 +16,23 @@
     <string name="hintNameEditText">Type your Name Here</string>
     <string name="map">Map View</string>
 
+    <integer-array name="distanceArray">
+        <item>0</item>
+        <item>10</item>
+        <item>15</item>
+        <item>20</item>
+        <item>45</item>
+        <item>65</item>
+    </integer-array>
+
+    <integer-array name="frequencyArray">
+        <item>0</item>
+        <item>1000</item>
+        <item>2000</item>
+        <item>3000</item>
+        <item>4000</item>
+        <item>65</item>
+    </integer-array>
+    
+    
 </resources>
