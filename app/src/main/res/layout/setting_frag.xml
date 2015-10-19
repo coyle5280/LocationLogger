@@ -12,10 +12,8 @@ Menu Fragment XML Layout File
         android:clickable="true"
         android:background="@android:color/black"
     android:id="@+id/label">
-        <!--android:background="@android:color/black"--><![CDATA[
-    >
+        <!--android:background="@android:color/black"-->
 
-    ]]>
 
     <Spinner
         android:layout_width="150dp"
@@ -23,10 +21,10 @@ Menu Fragment XML Layout File
         android:id="@+id/spinnerFrequency"
         android:spinnerMode="dropdown"
         android:textAlignment="center"
-        android:transitionGroup="false"
         android:layout_below="@+id/textView3"
         android:layout_alignStart="@+id/textView3"
-        android:layout_marginTop="25dp" />
+        android:layout_marginTop="25dp"
+        />
 
     <Spinner
         android:layout_width="150dp"
@@ -35,7 +33,8 @@ Menu Fragment XML Layout File
         android:spinnerMode="dropdown"
         android:layout_below="@+id/textView2"
         android:layout_alignStart="@+id/textView2"
-        android:layout_marginTop="25dp" />
+        android:layout_marginTop="25dp"
+        />
 
     <TextView
         android:layout_width="wrap_content"
@@ -96,5 +95,17 @@ Menu Fragment XML Layout File
         android:layout_alignStart="@+id/textView"
         android:layout_alignEnd="@+id/editTextObservation"
         android:scrollIndicators="end" />
+
+    <Button
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/saveSettings"
+        android:id="@+id/saveSettings"
+        android:layout_alignTop="@+id/textView2"
+        android:layout_alignParentEnd="true"
+        android:layout_toEndOf="@+id/editTextName"
+        android:layout_marginRight="15dp"
+        android:visibility="invisible"/>
 
 </RelativeLayout>

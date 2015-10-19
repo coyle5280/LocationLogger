@@ -1,7 +1,9 @@
 package assignment.mobile.locationlogger;
 
 /**
- * Created by coyle on 10/14/2015.
+ * Object used to hold settings
+ * @author Joshua Coyle.
+ * @author Robert Slavik
  */
 public class SettingsObject {
     String name;
@@ -15,20 +17,46 @@ public class SettingsObject {
         timerFrequencyVariable = timerFreq;
         distanceUpdateVariable = distance;
     }
+
+    /**
+     *
+     * @return
+     */
     public String getName(){
         return name;
     }
 
+    /**
+     *
+     * @return
+     */
     public String getObservation(){
         return observation;
     }
 
+    /**
+     *
+     * @return
+     */
     public int getTimerFrequencyVariable(){
         return timerFrequencyVariable;
     }
 
+    /**
+     *
+     * @return
+     */
     public int getDistanceUpdateVariable(){
         return distanceUpdateVariable;
+    }
+
+    /**
+     *
+     * @return
+     */
+    public String toString(){
+        return "Name: " + name + " Observation: " + observation + " Timer: " +
+                timerFrequencyVariable + " Distance: " + distanceUpdateVariable;
     }
 
 }

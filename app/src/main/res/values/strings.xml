@@ -9,30 +9,31 @@
     <string name="batteryLevel">Battery Level</string>
     <string name="setText">Set Text Color</string>
     <string name="setName">Set Name</string>
-    <string name="setLocationDistance">Set Distance </string>
-    <string name="setLocationFrequency">Set Frequency Timer</string>
+    <string name="setLocationDistance">Set Distance (m) </string>
+    <string name="setLocationFrequency">Set Frequency Timer (s)</string>
     <string name="setObservation">Set Observation</string>
     <string name="hintObservationEditText">Type your Observation Here</string>
     <string name="hintNameEditText">Type your Name Here</string>
     <string name="map">Map View</string>
+    <string name="saveSettings">Save Settings</string>
 
-    <integer-array name="distanceArray">
+    <string-array name="distanceArray">
         <item>0</item>
         <item>10</item>
         <item>15</item>
         <item>20</item>
         <item>45</item>
         <item>65</item>
-    </integer-array>
+    </string-array>
 
-    <integer-array name="frequencyArray">
+    <string-array name="frequencyArray">
         <item>0</item>
-        <item>1000</item>
-        <item>2000</item>
-        <item>3000</item>
-        <item>4000</item>
-        <item>65</item>
-    </integer-array>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>6</item>
+    </string-array>
     
     
 </resources>

@@ -3,18 +3,15 @@ package assignment.mobile.locationlogger;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.DownloadManager;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
-import android.os.AsyncTask;
 import android.os.BatteryManager;
 import android.os.Bundle;
 import android.text.method.ScrollingMovementMethod;
@@ -27,15 +24,6 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
-
-import com.android.volley.AuthFailureError;
-import com.android.volley.Request;
-import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.StringRequest;
-import com.android.volley.toolbox.Volley;
 
 
 
@@ -46,24 +34,19 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.TimeZone;
 
 
 /**
- * Created by godzilla on 9/30/2015.
+ * This application uses location data to calculate the distance between the starting point and the
+ * ending point.  It calculates two types of distance.  One is a continuous distance and the other
+ * is the distance between the start point and the end point.  It also sends the location data to
+ * a CartoDB database for visual representation.
+ *
+ * @author Joshua Coyle.
+ * @author Robert Slavik
  */
-public class LocationMain extends Activity {
-
-    private boolean gpsAvailable;
-
-
-
-//    private RequestQueue queue;
-
-    private String observation;
-
+public class LocationMain extends Activity implements SettingsFragment.settingsListener{
     //TextView Objects
     private TextView textLocationView;
     private TextView battTextView;
@@ -74,33 +57,37 @@ public class LocationMain extends Activity {
     private Location location;
 
     private float[] distanceArray;
-
-    String name;
+    //Settings for Database
+    private String name;
     private int updateLocationTimer;
     private int updateLocationDistance;
     private int locationAccuracySetting;
-
-    private Intent batteryStatus;
+    private String observation;
 
     //  Menu
     ActionBar actionBar;
     //  Menu
     private boolean settingsBoolean = false;
     private boolean mapBoolean = false;
-
+    //Settings Fragment Object
     SettingsFragment settings;
-
+    //Map Fragment Object
     MapView map;
-
+    //Holds failed URLs
     ArrayList<String> failedHttpCallUrls;
-
+    //List of Locations
     private ArrayList locationList;
-
+    //HTML holder
     private WebView mWebView;
-
+    //Used to hold continous distance calculation
     private float continuousDistance = -1.0f;
+    //Location object hold previous location
     private Location previousLocation;
 
+    /**
+     * Part of Application Lifecycle
+     * @param savedInstanceState
+     */
     @Override
     public void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
@@ -113,7 +100,7 @@ public class LocationMain extends Activity {
 
 
     /**
-     *
+     *This method sets up the Location Object and corresponding listener
      */
     private void setupLocation() {
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
@@ -135,21 +122,25 @@ public class LocationMain extends Activity {
 
             @Override
             public void onStatusChanged(String provider, int status, Bundle extras) {
-
+                //Not Used
             }
 
             @Override
             public void onProviderEnabled(String provider) {
-
+                //Not Used
             }
 
             @Override
             public void onProviderDisabled(String provider) {
-
+                //Not Used
             }
         };
     }
 
+    /**
+     * This method is used to calculate the continuous distance
+     * @param location - The New Location
+     */
     private void calculateContinuous(Location location) {
         if(continuousDistance == -1.0f){
             previousLocation = location;
@@ -160,13 +151,19 @@ public class LocationMain extends Activity {
         }
     }
 
+    /**
+     * This method is used to display the current Lat Lon Data point
+     * @param location
+     */
     private void updateLocationInfo(Location location) {
         textLocationView.append("Lat: " + location.getLatitude() + "  Lon: " + location.getLongitude() + "\n");
         textLocationView.append("\n");
         }
 
+    /**
+     *This method is called to setup UI items
+     */
     private void setupItems() {
-//        queue = Volley.newRequestQueue(this);
 
         mWebView = new WebView(this);
         mWebView.getSettings().setUserAgentString("Mozilla/5.0 (Windows NT 6.2; Win64; x64; rv:21.0.0) Gecko/20121011 Firefox/21.0.0");
@@ -200,22 +197,13 @@ public class LocationMain extends Activity {
         updateLocationTimer = 0;
         locationAccuracySetting = 10;
 
-
-
-
         // Menu
         settings = new SettingsFragment();
         map = new MapView();
         //Menu
 
-
+        //Needed to store result when calling location method distanceBetween
         distanceArray = new float[5];
-
-
-
-
-        //Batt Level listener
-
         //Array List to Hold location objects
         locationList = new ArrayList();
 
@@ -260,7 +248,8 @@ public class LocationMain extends Activity {
     }
 
     /**
-     *
+     *This method is called on button stop pressed,
+     * tries to resend and failed URLS.  Will only retry 75 to prevent an infinite loop situation
      */
     private void tryFailedUrls() {
         String url = "";
@@ -278,9 +267,9 @@ public class LocationMain extends Activity {
     //Menu
 
     /**
-     *
-     * @param menu
-     * @return
+     * Inflate the menu
+     * @param menu - Menu Object
+     * @return boolean - Was successful
      */
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -290,6 +279,12 @@ public class LocationMain extends Activity {
     }
     //Menu
 
+    /**
+     * This method is used to select the method that corresponds
+     * with the selected menu item
+     * @param item - Selected menu item
+     * @return boolean - Was the menu Item found
+     */
     public boolean onOptionsItemSelected(MenuItem item){
         switch (item.getItemId()) {
             case R.id.settings:
@@ -308,7 +303,7 @@ public class LocationMain extends Activity {
 
 
     /**
-     *
+     *Called to bring up the map view
      */
     private void switchToMapView() {
         if(!mapBoolean) {
@@ -327,8 +322,8 @@ public class LocationMain extends Activity {
     }
 
     /**
-     *
-     * @return
+     * This method gets the current time and converts it into ISO format for Sending
+     * @return - String Current Data and Time
      */
     private String getCurrentTime(){
         String isoTime;
@@ -339,8 +334,11 @@ public class LocationMain extends Activity {
         return isoTime;
     }
 
-    //Change Settings Methods
-    private void updateSettings(SettingsObject newSettings){
+    /**
+     * Method called to change current settings
+     * @param newSettings
+     */
+    public void updateSettings(SettingsObject newSettings){
         observation = newSettings.getObservation();
         name = newSettings.getName();
         updateLocationTimer = newSettings.getTimerFrequencyVariable();
@@ -348,21 +346,16 @@ public class LocationMain extends Activity {
 
     }
 
-    //End Change Settings Methods
 
     /**
-     *
+     * This method is called to send data to database
      * @param location
      */
     private void sendLocationInfoGet(Location location) {
 
 
-        // Enable javascript
-//        mWebView.getSettings().setJavaScriptEnabled(true);
-        // Impersonate Mozzila browser
-
-
         //Lon then Lat
+        //Build URL
         String url = "http://coyle5280.cartodb.com/api/v2/sql?q=INSERT INTO " +
                 "mobile_data(the_geom, observation, timestamp, name, battery_level)" +
                 " VALUES (ST_GeomFromText('POINT(" + location.getLongitude() + " " +
@@ -371,9 +364,9 @@ public class LocationMain extends Activity {
                 "&api_key=baba08a4c371dc7ed93027f141d0f425c4606c45";
 
 
-
+        //Send Data to database
         mWebView.loadUrl(url);
-
+        //Used for testing
         Log.i("another Try", url);
 //        StringRequest stringRequest = new StringRequest(url,
 //                new Response.Listener<String>() {
@@ -413,13 +406,13 @@ public class LocationMain extends Activity {
     }
 
     /**
-     *
-     * @return
+     * This method calculates the current battery level
+     * @return float - the Current Battery Level
      */
     private float getBatteryLevel (){
         float batteryLevel;
         IntentFilter intentFilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-        batteryStatus = this.registerReceiver(null, intentFilter);
+        Intent batteryStatus = this.registerReceiver(null, intentFilter);
         int batteryStartLevelInt = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
 //        Log.i("batStartLevelInt", Integer.toString(batteryStartLevelInt));
         int batteryStartScaleInt = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
@@ -429,7 +422,7 @@ public class LocationMain extends Activity {
     }
 
     /**
-     *
+     *This method is used to calculate the continuous distance
      */
     private void calculateStartEnd() {
         if (locationList.size() > 1) {
@@ -459,13 +452,13 @@ public class LocationMain extends Activity {
     }
 
     /**
-     *
+     *Used to display the settings fragment
      */
     private void callSettings() {
         if(!settingsBoolean) {
             FragmentManager fragmentManager = getFragmentManager();
             FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-            fragmentTransaction.replace(R.id.root, settings);
+            fragmentTransaction.add(R.id.root, settings);
             fragmentTransaction.commit();
             settingsBoolean = true;
         }else{
@@ -478,7 +471,7 @@ public class LocationMain extends Activity {
     }
 
     /**
-     *
+     *Method called to display results when stop button pressed
      */
     private void displayResults(){
 
