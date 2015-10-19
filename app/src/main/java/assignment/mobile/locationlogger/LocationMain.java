@@ -57,7 +57,7 @@ public class LocationMain extends Activity implements SettingsFragment.settingsL
     private Location location;
 
     private float[] distanceArray;
-    //Settings for Database
+    //Settings for Database and Location
     private String name;
     private int updateLocationTimer;
     private int updateLocationDistance;
@@ -79,7 +79,7 @@ public class LocationMain extends Activity implements SettingsFragment.settingsL
     private ArrayList locationList;
     //HTML holder
     private WebView mWebView;
-    //Used to hold continous distance calculation
+    //Used to hold continuous distance calculation
     private float continuousDistance = -1.0f;
     //Location object hold previous location
     private Location previousLocation;
@@ -220,8 +220,10 @@ public class LocationMain extends Activity implements SettingsFragment.settingsL
                 //Clear Out Previous Info
                 textLocationView.setText("");
                 distanceTextview.setText("");
+                //Clear Text field and Display Start Batt Level
                 battTextView.setText("");
                 battTextView.setText("Start Battery Level: " + Float.toString(getBatteryLevel()) + "\n");
+                //Show Stop Button Hide Start Button
                 stop.setVisibility(View.VISIBLE);
                 start.setVisibility(View.INVISIBLE);
 
@@ -238,8 +240,10 @@ public class LocationMain extends Activity implements SettingsFragment.settingsL
             @Override
             public void onClick(View v) {
                 calculateStartEnd();
+                //Show Start Button Hide Stop Button
                 start.setVisibility(View.VISIBLE);
                 stop.setVisibility(View.INVISIBLE);
+                //Stop getting updates
                 locationManager.removeUpdates(locationListener);
                 tryFailedUrls();
                 displayResults();
@@ -249,7 +253,8 @@ public class LocationMain extends Activity implements SettingsFragment.settingsL
 
     /**
      *This method is called on button stop pressed,
-     * tries to resend and failed URLS.  Will only retry 75 to prevent an infinite loop situation
+     * tries to resend failed URLS.  Will only retry 75 to prevent an infinite loop situation
+     * Could lead to data loss
      */
     private void tryFailedUrls() {
         String url = "";
